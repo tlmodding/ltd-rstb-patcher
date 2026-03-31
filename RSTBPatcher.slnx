@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RSTBPatcher.CLI/RSTBPatcher.CLI.csproj" />
+  <Project Path="RSTBPatcher.Core/RSTBPatcher.Core.csproj" />
+</Solution>

@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "Invalid Folder": {
+      "commandName": "Project",
+      "commandLineArgs": "patch -i ResourceSizeTable.Trial.100.Nin_NX_NVN.rsizetable.zs -t Test"
+    },
+    "Export to CSV": {
+      "commandName": "Project",
+      "commandLineArgs": "export -i ResourceSizeTable.Trial.100.Nin_NX_NVN.rsizetable.zs --romfs \"C:\\Users\\Rafa\\Downloads\\tomodas romfs\\Section_1\""
+    },
+    "Patch RSTB": {
+      "commandName": "Project",
+      "commandLineArgs": "patch -i ResourceSizeTable.Trial.100.Nin_NX_NVN.rsizetable.zs -t romfs"
+    }
+  }
+}
