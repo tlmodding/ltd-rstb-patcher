@@ -6,7 +6,12 @@ public class AinbResourceCalculator : IResourceCalculator
 {
     public static uint CalculateSizeOffset(Stream stream, string romfsName)
     {
-        uint size = 392;
+        uint size = 0xe0; // sead::FrameHeap
+        size += 0x20; // sead::MemBlock
+        size += 0x30; // AIResource
+        size += 0x10; // Unknown
+        size += 0x68; // Extractor
+        //uint size = 392;
 
         using var binaryReader = new BinaryReader(stream);
         int exbOffset = binaryReader.ReadInt32At(0x44);
@@ -14,9 +19,10 @@ public class AinbResourceCalculator : IResourceCalculator
         if (exbOffset != 0)
         {
             int exbCountOffset = binaryReader.ReadInt32At(exbOffset + 0x20);
-            uint exbSignatureCount = binaryReader.ReadUInt32At(exbOffset + exbCountOffset);
+            uint count = binaryReader.ReadUInt32At(exbOffset + exbCountOffset);
 
-            size += 16 + (exbSignatureCount + 1) / 2 * 8;
+            //size += 16 + (exbSignatureCount + 1) / 2 * 8;
+            size += 16 + 4 * ((count & 1) != 0 ? count + 1 : count);
         }
 
         return size;

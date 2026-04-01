@@ -1,6 +1,7 @@
 ﻿using AeonSake.NintendoTools.Compression.Zstd;
 using RSTBPatcher.Core.Calculators;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection.PortableExecutable;
 using System.Text;
 
 using BinaryReader = AeonSake.BinaryTools.BinaryReader;
@@ -50,7 +51,7 @@ public class RESTBLFile
 
     public List<BaseEntry> Entries { get; set; }
 
-    public bool TryGetEntry(string path, [MaybeNullWhen(false)] out RESTBLFile.BaseEntry entry)
+    public bool TryGetEntry(string path, [MaybeNullWhen(false)] out BaseEntry entry)
     {
         entry = null;
 
@@ -147,29 +148,32 @@ public class RESTBLFile
         Save(stream);
     }
 
-    public static long GetFileSize(string entireFileName, string romfsName)
+    public static long GetFileSize(Stream stream, string romfsName, long? overrideSize = null)
     {
-        var fileStream = new FileStream(entireFileName, FileMode.Open);
+        var size = overrideSize ?? stream.Length;
+        var extension = Path.GetExtension(romfsName);
 
-        long size = 0;
+        if (!overrideSize.HasValue && Decompressor.CanDecompress(stream))
+            size = (long) ZstdDecompressor.GetDecompressedSize(stream);
+         
+        //var fileStream = new FileStream(entireFileName, FileMode.Open);
 
-        using var decompressed = new MemoryStream();
-        if (entireFileName.EndsWith(".zs") || Decompressor.CanDecompress(fileStream))
-        {
-            Decompressor.Decompress(fileStream, decompressed);
-            size = decompressed.Length;
-        }
-        else fileStream.CopyTo(decompressed);
+        //long size = 0;
 
-        decompressed.Position = 0;
+        //using var decompressed = new MemoryStream();
+        //if (entireFileName.EndsWith(".zs") || Decompressor.CanDecompress(fileStream))
+        //{
+        //    Decompressor.Decompress(fileStream, decompressed);
+        //}
+        //else 
+        //    fileStream.CopyTo(decompressed);
 
-        if (size == 0) size = new FileInfo(entireFileName).Length;
 
         // Round up to the next number divisible by 32
         size = size + 31 & -32;
 
-        var extension = Path.GetExtension(romfsName);
-        return EstimateSize(size, decompressed, extension, romfsName);
+      
+        return EstimateSize(size, stream, extension, romfsName);
     }
 
     public static long EstimateSize(long size, Stream stream, string extension, string romfsName)
@@ -178,6 +182,9 @@ public class RESTBLFile
         {
             "VoiceText/userdict_jpn.csv" => size + 0x138,
             "Font/Font.Nin_NX_NVN.bfarc" => size + 0xA20,
+            "Sound/Resource/Mii_Static.bars" => size + 0x280,
+            "Tex/Pack/MiiFaceMaskPos.bntx" => size + 0xE40,
+            "Tex/Pack/MiiParts.bntx" => size + 0x960,
             _ => extension switch
             {
                 ".ainb" => size + AinbResourceCalculator.CalculateSizeOffset(stream, romfsName),
@@ -187,42 +194,24 @@ public class RESTBLFile
                 ".baev" => size + 0x140,
                 ".bagst" => size + 0x120,
                 ".bars" => size + 0x260,
-                ".bcul" => size + 0x100,
-                ".beco" => size + 0x100,
                 ".belnk" => size + 0x120,
                 ".bfarc" => size + 0x120,
-                //".bfevfl" => size + 0x120,
                 ".bfsha" => size + 0x120,
                 ".bhtmp" => size + 0x100,
-                ".blal" => size + 0x100,
                 ".blarc" => size + BlarcResourceCalculator.CalculateSizeOffset(stream, romfsName),
                 ".blwp" => size + 0x100,
-                ".bnsh" => size + 0x100,
+                ".bnsh" => size + 0x9C8, // probably complex but there is only one file using this
                 ".bntx" => size + 0x1000,
-                ".bphcl" => size + 0x530,
+                ".bphcl" => size + 0x718,
                 ".bphhb" => size + 0x100,
                 ".bphnm" => size + 0x120,
                 ".bphsh" => size + 0x190,
                 ".bslnk" => size + 0x120,
                 ".byml" => size + 0x120,
-                ".cai" => size + 0x100,
-                ".casset.byml" => size + 0x1C0,
-                ".chunk" => size + 0x100,
-                ".crbin" => size + 0x100,
-                ".cutinfo" => size + 0x100,
-                ".dpi" => size + 0x100,
-                ".genvb" => size + 3736,
-                ".jpg" => size + 0x100,
+                ".genvb" => size + 0xE98, // probably complex
                 ".pack" => size + 0x180,
-                ".png" => size + 0x100,
-                ".quad" => size + 0x100,
                 ".sarc" => size + 0x2000,
-                ".tscb" => size + 0x100,
-                ".txtg" => size + 0x100,
                 ".txt" => size + 0x120,
-                ".vsts" => size + 0x100,
-                ".wbr" => size + 0x100,
-                ".zs" => size + 0x100,
                 ".bin" => size + 0x120,
                 ".vtdb2" => size + 0x120,
                 ".csv" => size + 0x120,
