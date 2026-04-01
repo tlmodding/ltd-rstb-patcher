@@ -6,11 +6,19 @@
     },
     "Export to CSV": {
       "commandName": "Project",
-      "commandLineArgs": "export -i ResourceSizeTable.Trial.100.Nin_NX_NVN.rsizetable.zs --romfs \"C:\\Users\\Rafa\\Downloads\\tomodas romfs\\Section_1\""
+      "commandLineArgs": "export -i ResourceSizeTable.Trial.100.Nin_NX_NVN.rsizetable.zs --romfs \"C:\\Users\\Rafa\\Desktop\\tomodas romfs\\Section_1\" -o output"
     },
     "Patch RSTB": {
       "commandName": "Project",
       "commandLineArgs": "patch -i ResourceSizeTable.Trial.100.Nin_NX_NVN.rsizetable.zs -t romfs"
+    },
+    "Patch RSTB 101": {
+      "commandName": "Project",
+      "commandLineArgs": "patch -i ResourceSizeTable.Trial.101.Nin_NX_NVN.rsizetable.zs -t romfs"
+    },
+    "Profile 1": {
+      "commandName": "Project",
+      "commandLineArgs": "export -i ResourceSizeTable.Trial.101.Nin_NX_NVN.rsizetable.zs --romfs \"C:\\Users\\Rafa\\Desktop\\tomodas romfs\\Section_1\" -o output"
     }
   }
 }

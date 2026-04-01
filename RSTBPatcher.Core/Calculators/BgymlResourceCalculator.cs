@@ -31,6 +31,7 @@ public class BgymlResourceCalculator : IResourceCalculator
             "pp__CombinationDataTableData.bgyml" => 13960,
             "phive__RigidBodyEntityParam.bgyml" => 1112,
             "phive__RigidBodyControllerEntityParam.bgyml" => 1024,
+            "gfx__OceanSystemParam.bgyml" => 0x570,
 
             "actor__ActorColorVariationSetting.bgyml" => 0x360,
             "actor__AccidentSystemParam.bgyml" => 0x360,

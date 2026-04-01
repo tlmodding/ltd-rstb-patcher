@@ -5,6 +5,7 @@ using RSTBPatcher.Core;
 using System.Collections.Concurrent;
 using System.CommandLine;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 
 internal class Program
 {
@@ -44,7 +45,6 @@ internal class Program
                 return;
             }
         });
-
 
         var moddedRomfsOption = new Option<string>(name: "--target", "-t")
         {
@@ -167,8 +167,7 @@ internal class Program
         var rstb = new RESTBLFile(stream);
         Console.WriteLine($"Loaded RSTB with {rstb.Entries.Count} entries...");
 
-        var dict = new ConcurrentDictionary<string, (uint RstbSize, long ActualSize)>(StringComparer.OrdinalIgnoreCase);
-
+        // Fast lookup for RSTB entries
         var pathMap = rstb.Entries
             .Where(e => !string.IsNullOrEmpty(e.Path))
             .GroupBy(e => e.Path!, StringComparer.OrdinalIgnoreCase)
@@ -178,80 +177,120 @@ internal class Program
             .GroupBy(e => e.Hash)
             .ToDictionary(g => g.Key, g => g.First());
 
+        // Store discovered file info directly for fast export
+        var foundByPath = new ConcurrentDictionary<string, (uint RstbSize, long ActualSize)>(StringComparer.OrdinalIgnoreCase);
+        var foundByHash = new ConcurrentDictionary<uint, (string Path, uint RstbSize, long ActualSize)>();
+
         Console.WriteLine("Scanning files, this may take a while...");
 
         var files = Directory.EnumerateFiles(romfs, "*", SearchOption.AllDirectories);
 
-        Parallel.ForEach(files, file =>
-        {
-            var path = Path.GetRelativePath(romfs, file).Replace(Path.DirectorySeparatorChar, '/');
-
-            string ext = Path.GetExtension(path);
-
-            if (ext is ".zs" or ".mc" && !path.EndsWith(".ta.zs"))
+        Parallel.ForEach(
+            files,
+            new ParallelOptions
             {
-                path = path[..^3];
-                ext = Path.GetExtension(path);
-            }
-
-            using var decompressedStream = new MemoryStream();
-            using var reader = File.OpenRead(file);
-
-            if (Decompressor.CanDecompress(reader))
-                Decompressor.Decompress(reader, decompressedStream);
-            else reader.CopyTo(decompressedStream);
-
-            var decompressedSize = decompressedStream.Length;
-            TryAddEntry(path, decompressedSize);
-
-            if (ext is ".pack")
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1)
+            },
+            file =>
             {
-                decompressedStream.Position = 0;
+                string relativePath = Path.GetRelativePath(romfs, file)
+                    .Replace(Path.DirectorySeparatorChar, '/');
 
-                if (SARCReader.CanRead(decompressedStream))
+                string normalizedPath = relativePath;
+                string ext = Path.GetExtension(normalizedPath);
+
+                if ((ext.Equals(".zs", StringComparison.OrdinalIgnoreCase) ||
+                     ext.Equals(".mc", StringComparison.OrdinalIgnoreCase)) &&
+                    !normalizedPath.EndsWith(".ta.zs", StringComparison.OrdinalIgnoreCase))
                 {
-                    var sarc = SARCReader.Read(decompressedStream);
-                    if (sarc.HasFileNames)
-                        foreach (var sarcFile in sarc.Files)
-                            TryAddEntry(sarcFile.Name, sarcFile.Data.Length);
-
+                    normalizedPath = normalizedPath[..^3];
+                    ext = Path.GetExtension(normalizedPath);
                 }
-            }
 
-        });
+                using var reader = File.OpenRead(file);
+                using var decompressedStream = new MemoryStream();
+
+                if (Decompressor.CanDecompress(reader))
+                    Decompressor.Decompress(reader, decompressedStream);
+                else
+                    reader.CopyTo(decompressedStream);
+
+                long decompressedSize = decompressedStream.Length;
+                TryAddEntry(normalizedPath, decompressedSize);
+
+                if (ext.Equals(".pack", StringComparison.OrdinalIgnoreCase))
+                {
+                    decompressedStream.Position = 0;
+
+                    if (SARCReader.CanRead(decompressedStream))
+                    {
+                        var sarc = SARCReader.Read(decompressedStream);
+                        if (sarc.HasFileNames)
+                        {
+                            foreach (var sarcFile in sarc.Files)
+                            {
+                                TryAddEntry(sarcFile.Name, sarcFile.Data.Length);
+                            }
+                        }
+                    }
+                }
+            });
 
         Console.WriteLine("Exporting to CSV...");
 
-        var csvLines = new List<string> {
-                    "FileName,Extension,Full Extension,RSTB Entry Size,Size"
-                };
+        var csvLines = new List<string>(rstb.Entries.Count + 1)
+    {
+        "FileName,Extension,Full Extension,RSTB Entry Size,Size"
+    };
 
-        foreach (var (path, (rstbEntry, size)) in dict)
+        foreach (var entry in rstb.Entries)
         {
+            string path = entry.Path ?? "";
+            uint rstbSize = entry.Size;
+            long actualSize = 0;
+
+            if (entry.Path != null)
+            {
+                if (foundByPath.TryGetValue(entry.Path, out var found))
+                {
+                    rstbSize = found.RstbSize;
+                    actualSize = found.ActualSize;
+                    path = entry.Path;
+                }
+            }
+            else if (foundByHash.TryGetValue(entry.Hash, out var found))
+            {
+                path = found.Path;
+                rstbSize = found.RstbSize;
+                actualSize = found.ActualSize;
+            }
+
             int extensionIndex = path.IndexOf('.');
             string fullExtension = extensionIndex >= 0 ? path[(extensionIndex + 1)..] : "";
-            string extension = Path.GetExtension(path).ToUpper();
+            string extension = string.IsNullOrEmpty(path) ? "" : Path.GetExtension(path).ToUpperInvariant();
 
-            csvLines.Add($"{path},{extension},{fullExtension},{rstbEntry},{size}");
-
+            csvLines.Add($"{path},{extension},{fullExtension},{rstbSize},{actualSize}");
         }
 
-        var outputPath = Path.Combine(output, $"{Path.GetFileNameWithoutExtension(input.Name)}.csv");
+        Directory.CreateDirectory(output);
+
+        string outputPath = Path.Combine(output, $"{Path.GetFileNameWithoutExtension(input.Name)}.csv");
         File.WriteAllLines(outputPath, csvLines);
-        Console.WriteLine($"Exported {csvLines.Count - 1} rows to \"{outputPath}\" successfully!");
+
+        Console.WriteLine($"Exported {csvLines.Count - 1}/{rstb.Entries.Count} rows to \"{outputPath}\" successfully!");
 
         void TryAddEntry(string filePath, long actualSize)
         {
             if (pathMap.TryGetValue(filePath, out var pathEntry))
             {
-                dict.TryAdd(filePath, (pathEntry.Size, actualSize));
+                foundByPath.TryAdd(filePath, (pathEntry.Size, actualSize));
                 return;
             }
 
             uint hash = filePath.ToCRC32();
             if (hashMap.TryGetValue(hash, out var hashEntry))
             {
-                dict.TryAdd(filePath, (hashEntry.Size, actualSize));
+                foundByHash.TryAdd(hash, (filePath, hashEntry.Size, actualSize));
             }
         }
     }

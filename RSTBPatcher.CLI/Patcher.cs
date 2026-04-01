@@ -45,8 +45,7 @@ public class Patcher
 
         var options = new ParallelOptions
         {
-            //MaxDegreeOfParallelism = 1
-            MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount)
+            MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1)
         };
 
         Parallel.ForEach(files, options, originalFile =>
@@ -69,14 +68,7 @@ public class Patcher
                 return;
             }
 
-            //using var decompressedStream = new MemoryStream();
             using var reader = File.OpenRead(originalFile);
-
-           
-            //    Decompressor.Decompress(reader, decompressedStream);
-            //else reader.CopyTo(decompressedStream);
-
-            //var decompressedSize = decompressedStream.Length;
 
             var blacklistedPacks = new List<string>()
             {
