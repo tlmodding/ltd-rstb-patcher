@@ -11,7 +11,6 @@ public class AinbResourceCalculator : IResourceCalculator
         size += 0x30; // AIResource
         size += 0x10; // Unknown
         size += 0x68; // Extractor
-        //uint size = 392;
 
         using var binaryReader = new BinaryReader(stream);
         var exbOffset = binaryReader.ReadInt32At(0x44);
@@ -21,7 +20,6 @@ public class AinbResourceCalculator : IResourceCalculator
             var exbCountOffset = binaryReader.ReadInt32At(exbOffset + 0x20);
             var count = binaryReader.ReadUInt32At(exbOffset + exbCountOffset);
 
-            //size += 16 + (exbSignatureCount + 1) / 2 * 8;
             size += 16 + 4 * ((count & 1) != 0 ? count + 1 : count);
         }
 

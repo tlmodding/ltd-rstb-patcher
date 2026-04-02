@@ -79,8 +79,9 @@ public class Patcher
             long? overrideSize = null;
             if (ext is ".pack" && !blacklistedPacks.Contains(path))
             {
+#if DEBUG
                 Console.WriteLine($"> Opening pack... {path}");
-
+#endif
                 if (Decompressor.CanDecompress(reader))
                 {
                     using var decompressedStream = new MemoryStream();
@@ -107,13 +108,11 @@ public class Patcher
             AddFile(path, reader, overrideSize);
         });
 
-
-
         wrongFileTypes = [.. wrongFileTypes.Distinct()];
         correctFileTypes = [.. correctFileTypes.Where(x => !wrongFileTypes.Contains(x)).Distinct()];
 
+#if DEBUG
         Console.WriteLine("Matching Sizes:");
-
 
         Console.WriteLine(string.Join(", ", correctFileTypes));
 
@@ -126,6 +125,7 @@ public class Patcher
         Console.WriteLine($"{filesToRemove.Count} removed files.");
         Console.WriteLine($"{filesToCheck.Count} files (RSTB have {rstb.Entries.Count} entries)");
         Console.WriteLine($"{filesToCheck.Distinct().Count()} files (RSTB have {rstb.Entries.Count} entries)");
+#endif
 
         foreach (var kv in filesToRemove)
         {
@@ -176,7 +176,6 @@ public class Patcher
 
         stopwatch.Stop();
 
-        // Output the elapsed time
         Console.WriteLine($"Patch creation completed in {stopwatch.Elapsed.TotalSeconds:F2} seconds.");
     }
 
@@ -239,11 +238,15 @@ public class Patcher
             wrongFileTypes.Add(ext);
             filesToUpdate[path] = (uint)fileSize;
 
+#if DEBUG
             Console.WriteLine($"> {path} size mismatch! ({entry.Size} > {fileSize}) (Diff: {entry.Size - fileSize})");
+#endif
         }
         else
         {
+#if DEBUG
             Console.WriteLine($"{path} is new!");
+#endif
             // TODO: Add new entries
             filesToAdd[path] = (uint)fileSize;
         }

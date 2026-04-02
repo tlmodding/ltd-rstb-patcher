@@ -155,18 +155,6 @@ public class RESTBLFile
         if (!overrideSize.HasValue && Decompressor.CanDecompress(stream))
             size = (long)ZstdDecompressor.GetDecompressedSize(stream);
 
-        //var fileStream = new FileStream(entireFileName, FileMode.Open);
-
-        //long size = 0;
-
-        //using var decompressed = new MemoryStream();
-        //if (entireFileName.EndsWith(".zs") || Decompressor.CanDecompress(fileStream))
-        //{
-        //    Decompressor.Decompress(fileStream, decompressed);
-        //}
-        //else 
-        //    fileStream.CopyTo(decompressed);
-
 
         // Round up to the next number divisible by 32
         size = size + 31 & -32;
