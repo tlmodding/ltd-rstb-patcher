@@ -4,8 +4,6 @@ using RSTBPatcher.CLI;
 using RSTBPatcher.Core;
 using System.Collections.Concurrent;
 using System.CommandLine;
-using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
 
 internal class Program
 {
@@ -140,9 +138,9 @@ internal class Program
 
         exportCommand.SetAction(h =>
         {
-            FileInfo? input = h.GetValue(inputOption);
-            string? romfs = h.GetValue(romfsOption);
-            string? output = h.GetValue(outputOption);
+            var input = h.GetValue(inputOption);
+            var romfs = h.GetValue(romfsOption);
+            var output = h.GetValue(outputOption);
 
 
             if (input != null && romfs != null && output != null)
@@ -193,11 +191,11 @@ internal class Program
             },
             file =>
             {
-                string relativePath = Path.GetRelativePath(romfs, file)
+                var relativePath = Path.GetRelativePath(romfs, file)
                     .Replace(Path.DirectorySeparatorChar, '/');
 
-                string normalizedPath = relativePath;
-                string ext = Path.GetExtension(normalizedPath);
+                var normalizedPath = relativePath;
+                var ext = Path.GetExtension(normalizedPath);
 
                 if ((ext.Equals(".zs", StringComparison.OrdinalIgnoreCase) ||
                      ext.Equals(".mc", StringComparison.OrdinalIgnoreCase)) &&
@@ -215,7 +213,7 @@ internal class Program
                 else
                     reader.CopyTo(decompressedStream);
 
-                long decompressedSize = decompressedStream.Length;
+                var decompressedSize = decompressedStream.Length;
                 TryAddEntry(normalizedPath, decompressedSize);
 
                 if (ext.Equals(".pack", StringComparison.OrdinalIgnoreCase))
@@ -245,8 +243,8 @@ internal class Program
 
         foreach (var entry in rstb.Entries)
         {
-            string path = entry.Path ?? "";
-            uint rstbSize = entry.Size;
+            var path = entry.Path ?? "";
+            var rstbSize = entry.Size;
             long actualSize = 0;
 
             if (entry.Path != null)
@@ -265,16 +263,16 @@ internal class Program
                 actualSize = found.ActualSize;
             }
 
-            int extensionIndex = path.IndexOf('.');
-            string fullExtension = extensionIndex >= 0 ? path[(extensionIndex + 1)..] : "";
-            string extension = string.IsNullOrEmpty(path) ? "" : Path.GetExtension(path).ToUpperInvariant();
+            var extensionIndex = path.IndexOf('.');
+            var fullExtension = extensionIndex >= 0 ? path[(extensionIndex + 1)..] : "";
+            var extension = string.IsNullOrEmpty(path) ? "" : Path.GetExtension(path).ToUpperInvariant();
 
             csvLines.Add($"{path},{extension},{fullExtension},{rstbSize},{actualSize}");
         }
 
         Directory.CreateDirectory(output);
 
-        string outputPath = Path.Combine(output, $"{Path.GetFileNameWithoutExtension(input.Name)}.csv");
+        var outputPath = Path.Combine(output, $"{Path.GetFileNameWithoutExtension(input.Name)}.csv");
         File.WriteAllLines(outputPath, csvLines);
 
         Console.WriteLine($"Exported {csvLines.Count - 1}/{rstb.Entries.Count} rows to \"{outputPath}\" successfully!");
@@ -287,7 +285,7 @@ internal class Program
                 return;
             }
 
-            uint hash = filePath.ToCRC32();
+            var hash = filePath.ToCRC32();
             if (hashMap.TryGetValue(hash, out var hashEntry))
             {
                 foundByHash.TryAdd(hash, (filePath, hashEntry.Size, actualSize));

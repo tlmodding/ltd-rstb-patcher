@@ -1,7 +1,6 @@
 ﻿using AeonSake.NintendoTools.Compression.Zstd;
 using RSTBPatcher.Core.Calculators;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.PortableExecutable;
 using System.Text;
 
 using BinaryReader = AeonSake.BinaryTools.BinaryReader;
@@ -90,7 +89,7 @@ public class RESTBLFile
 
         Entries = [];
 
-        for (int i = 0; i < crcEntries; i++)
+        for (var i = 0; i < crcEntries; i++)
         {
             var hash = reader.ReadUInt32();
             var size = reader.ReadUInt32();
@@ -98,7 +97,7 @@ public class RESTBLFile
             Entries.Add(new CRC32Entry(hash, size));
         }
 
-        for (int i = 0; i < pathEntries; i++)
+        for (var i = 0; i < pathEntries; i++)
         {
             var path = reader.ReadString(NameLength);
             var size = reader.ReadUInt32();
@@ -130,7 +129,7 @@ public class RESTBLFile
 
         foreach (var item in pathEntries)
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(item.Path ?? "");
+            var bytes = Encoding.UTF8.GetBytes(item.Path ?? "");
             Array.Resize(ref bytes, NameLength);
 
             writer.Write(bytes);
@@ -154,8 +153,8 @@ public class RESTBLFile
         var extension = Path.GetExtension(romfsName);
 
         if (!overrideSize.HasValue && Decompressor.CanDecompress(stream))
-            size = (long) ZstdDecompressor.GetDecompressedSize(stream);
-         
+            size = (long)ZstdDecompressor.GetDecompressedSize(stream);
+
         //var fileStream = new FileStream(entireFileName, FileMode.Open);
 
         //long size = 0;
@@ -172,7 +171,7 @@ public class RESTBLFile
         // Round up to the next number divisible by 32
         size = size + 31 & -32;
 
-      
+
         return EstimateSize(size, stream, extension, romfsName);
     }
 

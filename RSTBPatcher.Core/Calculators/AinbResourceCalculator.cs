@@ -14,12 +14,12 @@ public class AinbResourceCalculator : IResourceCalculator
         //uint size = 392;
 
         using var binaryReader = new BinaryReader(stream);
-        int exbOffset = binaryReader.ReadInt32At(0x44);
+        var exbOffset = binaryReader.ReadInt32At(0x44);
 
         if (exbOffset != 0)
         {
-            int exbCountOffset = binaryReader.ReadInt32At(exbOffset + 0x20);
-            uint count = binaryReader.ReadUInt32At(exbOffset + exbCountOffset);
+            var exbCountOffset = binaryReader.ReadInt32At(exbOffset + 0x20);
+            var count = binaryReader.ReadUInt32At(exbOffset + exbCountOffset);
 
             //size += 16 + (exbSignatureCount + 1) / 2 * 8;
             size += 16 + 4 * ((count & 1) != 0 ? count + 1 : count);

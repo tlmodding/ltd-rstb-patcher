@@ -11,7 +11,7 @@ public class BlarcResourceCalculator : IResourceCalculator
     public static uint CalculateSizeOffset(Stream stream, string romfsName)
     {
         stream.Position = 0;
-      
+
         uint size = 0xe0;   // sead::FrameHeap
         size += 0x20;       // sead::MemBlock
         size += 0x70;       // LayoutResource
@@ -42,7 +42,8 @@ public class BlarcResourceCalculator : IResourceCalculator
                 size += 8;          // nn::gfx::BufferInfo
                 size += 4 * 0x10;   // NVNvertexAttribState
             }
-        } else
+        }
+        else
         {
             Console.WriteLine($"{romfsName} don't have a archive shader.");
         }

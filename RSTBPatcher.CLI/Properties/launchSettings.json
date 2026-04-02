@@ -6,7 +6,7 @@
     },
     "Export to CSV": {
       "commandName": "Project",
-      "commandLineArgs": "export -i ResourceSizeTable.Trial.100.Nin_NX_NVN.rsizetable.zs --romfs \"C:\\Users\\Rafa\\Desktop\\tomodas romfs\\Section_1\" -o output"
+      "commandLineArgs": "export -i ResourceSizeTable.Trial.100.Nin_NX_NVN.rsizetable.zs --romfs romfs -o output"
     },
     "Patch RSTB": {
       "commandName": "Project",
@@ -16,9 +16,9 @@
       "commandName": "Project",
       "commandLineArgs": "patch -i ResourceSizeTable.Trial.101.Nin_NX_NVN.rsizetable.zs -t romfs"
     },
-    "Profile 1": {
+    "Patch Ryubing": {
       "commandName": "Project",
-      "commandLineArgs": "export -i ResourceSizeTable.Trial.101.Nin_NX_NVN.rsizetable.zs --romfs \"C:\\Users\\Rafa\\Desktop\\tomodas romfs\\Section_1\" -o output"
+      "commandLineArgs": "patch -i ResourceSizeTable.Trial.100.Nin_NX_NVN.rsizetable.zs -t \"%appdata%\\Ryujinx\\sdcard\\atmosphere\\contents\\0100ca502552a000\\romfs\" -o \"%appdata%\\Ryujinx\\sdcard\\atmosphere\\contents\\0100ca502552a000\\romfs\\System\\Resource\""
     }
   }
 }

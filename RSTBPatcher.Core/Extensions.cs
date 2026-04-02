@@ -9,7 +9,7 @@ public static class Extensions
     {
         public uint ToCRC32()
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(value);
+            var bytes = Encoding.UTF8.GetBytes(value);
             return Crc32Algorithm.Compute(bytes);
         }
     }

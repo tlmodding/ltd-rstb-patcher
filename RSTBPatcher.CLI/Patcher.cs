@@ -4,7 +4,6 @@ using RSTBPatcher.Core;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using BinaryReader = AeonSake.BinaryTools.BinaryReader;
 
 namespace RSTBPatcher.CLI;
 
@@ -23,14 +22,14 @@ public class Patcher
     private readonly ConcurrentBag<string> filesToCheck = [];
     private readonly ConcurrentDictionary<string, uint> filesToRemove = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, uint> filesToUpdate = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, uint> filesToAdd    = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, uint> filesToAdd = new(StringComparer.OrdinalIgnoreCase);
 
     public void CreatePatchParallel(Stream stream, string fileName, string outputPath, string moddedPath)
     {
-        var stopwatch = Stopwatch.StartNew(); 
+        var stopwatch = Stopwatch.StartNew();
         var rstb = new RESTBLFile(stream);
 
-        bool anyChange = false;
+        var anyChange = false;
 
         pathMap = rstb.Entries
             .Where(e => !string.IsNullOrEmpty(e.Path))
@@ -50,11 +49,11 @@ public class Patcher
 
         Parallel.ForEach(files, options, originalFile =>
         {
-            string path = Path.GetRelativePath(moddedPath, originalFile)
+            var path = Path.GetRelativePath(moddedPath, originalFile)
                 .Replace(Path.DirectorySeparatorChar, '/');
 
 
-            string ext = Path.GetExtension(path);
+            var ext = Path.GetExtension(path);
 
             if ((ext is ".zs" or ".mc") && !path.EndsWith(".ta.zs", StringComparison.OrdinalIgnoreCase))
             {
@@ -70,18 +69,18 @@ public class Patcher
 
             using var reader = File.OpenRead(originalFile);
 
-            var blacklistedPacks = new List<string>()
-            {
+            List<string> blacklistedPacks =
+            [
                 "Pack/MiiPartsLocation.pack",
                 "Pack/MiiExpression.pack",
                 "Pack/MiiParts.pack"
-            };
+            ];
 
             long? overrideSize = null;
             if (ext is ".pack" && !blacklistedPacks.Contains(path))
             {
                 Console.WriteLine($"> Opening pack... {path}");
-            
+
                 if (Decompressor.CanDecompress(reader))
                 {
                     using var decompressedStream = new MemoryStream();
@@ -108,7 +107,7 @@ public class Patcher
             AddFile(path, reader, overrideSize);
         });
 
-    
+
 
         wrongFileTypes = [.. wrongFileTypes.Distinct()];
         correctFileTypes = [.. correctFileTypes.Where(x => !wrongFileTypes.Contains(x)).Distinct()];
@@ -130,10 +129,10 @@ public class Patcher
 
         foreach (var kv in filesToRemove)
         {
-            string path = kv.Key;
-            uint pathHash = kv.Value;
+            var path = kv.Key;
+            var pathHash = kv.Value;
 
-            int removedCount = rstb.Entries.RemoveAll(x =>
+            var removedCount = rstb.Entries.RemoveAll(x =>
                 (x.Path is string p && p.Equals(path, StringComparison.OrdinalIgnoreCase)) ||
                 x.Hash == pathHash);
 
@@ -143,9 +142,9 @@ public class Patcher
 
         foreach (var kv in filesToUpdate)
         {
-            string path = kv.Key;
-            uint newSize = kv.Value;
-            uint pathHash = path.ToCRC32();
+            var path = kv.Key;
+            var newSize = kv.Value;
+            var pathHash = path.ToCRC32();
 
             var entry = rstb.Entries.FirstOrDefault(x =>
                 (x.Path is string p && p.Equals(path, StringComparison.OrdinalIgnoreCase)) ||
@@ -175,7 +174,7 @@ public class Patcher
             Console.WriteLine("No changes detected, skipping patch creation.");
         }
 
-        stopwatch.Stop();  
+        stopwatch.Stop();
 
         // Output the elapsed time
         Console.WriteLine($"Patch creation completed in {stopwatch.Elapsed.TotalSeconds:F2} seconds.");
@@ -203,8 +202,8 @@ public class Patcher
     bool AddFile(string path, Stream stream, long? overrideSize = null)
     {
         filesToCheck.Add(path);
-        long fileSize = RESTBLFile.GetFileSize(stream, path, overrideSize);
-        var pathHash = path.ToCRC32(); 
+        var fileSize = RESTBLFile.GetFileSize(stream, path, overrideSize);
+        var pathHash = path.ToCRC32();
 
         if (fileSize < 0)
         {
