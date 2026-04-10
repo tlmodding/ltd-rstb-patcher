@@ -127,11 +127,8 @@ public class Patcher
         Console.WriteLine($"{filesToCheck.Distinct().Count()} files (RSTB have {rstb.Entries.Count} entries)");
 #endif
 
-        foreach (var kv in filesToRemove)
+        foreach (var (path, pathHash) in filesToRemove)
         {
-            var path = kv.Key;
-            var pathHash = kv.Value;
-
             var removedCount = rstb.Entries.RemoveAll(x =>
                 (x.Path is string p && p.Equals(path, StringComparison.OrdinalIgnoreCase)) ||
                 x.Hash == pathHash);
@@ -140,10 +137,8 @@ public class Patcher
                 anyChange = true;
         }
 
-        foreach (var kv in filesToUpdate)
+        foreach (var (path, newSize) in filesToUpdate)
         {
-            var path = kv.Key;
-            var newSize = kv.Value;
             var pathHash = path.ToCRC32();
 
             var entry = rstb.Entries.FirstOrDefault(x =>
@@ -155,6 +150,12 @@ public class Patcher
                 entry.Size = newSize;
                 anyChange = true;
             }
+        }
+
+        foreach (var (path, size) in filesToAdd)
+        {
+            rstb.Entries.Add(new RESTBLFile.PathEntry(path, size));
+            anyChange = true;
         }
 
         if (anyChange)
