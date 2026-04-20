@@ -1,0 +1,124 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            name: Linux-x64
+          - os: macos-latest
+            rid: osx-x64
+            name: macOS-x64
+          - os: macos-latest
+            rid: osx-arm64
+            name: macOS-arm64
+          - os: windows-latest
+            rid: win-x64
+            name: windows-x64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore RSTBPatcher.CLI/RSTBPatcher.CLI.csproj -r ${{ matrix.rid }}
+
+      - name: Build
+        run: dotnet build RSTBPatcher.CLI/RSTBPatcher.CLI.csproj -c Release --no-restore
+
+      - name: Publish
+        run: >
+          dotnet publish RSTBPatcher.CLI/RSTBPatcher.CLI.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          -o publish/${{ matrix.rid }}
+          --no-restore
+
+      - name: Zip output
+        shell: pwsh
+        run: Compress-Archive -Path publish/${{ matrix.rid }}/* -DestinationPath RSTBPatcher-${{ matrix.name }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RSTBPatcher-${{ matrix.name }}
+          path: RSTBPatcher-${{ matrix.name }}.zip
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: Build_${{ github.run_number }}
+          release_name: (Automatic) Build ${{ github.run_number }}
+          body: Automated release for commit ${{ github.sha }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/RSTBPatcher-Linux-x64/RSTBPatcher-Linux-x64.zip
+          asset_name: RSTBPatcher-Linux-x64.zip
+          asset_content_type: application/zip
+
+      - name: Upload macOS x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/RSTBPatcher-macOS-x64/RSTBPatcher-macOS-x64.zip
+          asset_name: RSTBPatcher-macOS-x64.zip
+          asset_content_type: application/zip
+
+      - name: Upload macOS arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/RSTBPatcher-macOS-arm64/RSTBPatcher-macOS-arm64.zip
+          asset_name: RSTBPatcher-macOS-arm64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Windows x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/RSTBPatcher-windows-x64/RSTBPatcher-windows-x64.zip
+          asset_name: RSTBPatcher-Windows-x64.zip
+          asset_content_type: application/zip
